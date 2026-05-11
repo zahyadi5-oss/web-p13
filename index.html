@@ -24,15 +24,15 @@ body{
   justify-content:center;
 }
 
-/* ===== CONTAINER PANEL ===== */
 .container{
   width:100%;
   max-width:800px;
 }
 
-/* ============================ */
-
-h2{ margin-top:0; text-align:center; }
+h2{
+  margin-top:0;
+  text-align:center;
+}
 
 .card{
   background:#fff;
@@ -76,7 +76,9 @@ button{
   font-weight:600;
 }
 
-button:hover{ opacity:.9; }
+button:hover{
+  opacity:.9;
+}
 
 #status{
   padding:12px;
@@ -92,11 +94,20 @@ button:hover{ opacity:.9; }
   background:#111;
   color:#0f0;
   padding:10px;
-  height:180px;
+  height:220px;
   overflow-y:auto;
   font-family:monospace;
   border-radius:8px;
   font-size:14px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.log-item{
+  border-bottom:1px solid rgba(0,255,0,.2);
+  padding-bottom:4px;
+  word-break:break-word;
 }
 </style>
 </head>
@@ -108,6 +119,7 @@ button:hover{ opacity:.9; }
 
 <div id="status">Not Connected</div>
 
+<!-- MQTT CONFIG -->
 <div class="card">
   <div class="card-header">MQTT Config</div>
   <div class="card-content active">
@@ -122,6 +134,7 @@ button:hover{ opacity:.9; }
   </div>
 </div>
 
+<!-- SUBSCRIBE -->
 <div class="card">
   <div class="card-header">Subscribe</div>
   <div class="card-content">
@@ -130,6 +143,7 @@ button:hover{ opacity:.9; }
   </div>
 </div>
 
+<!-- PUBLISH -->
 <div class="card">
   <div class="card-header">Publish</div>
   <div class="card-content">
@@ -139,34 +153,44 @@ button:hover{ opacity:.9; }
   </div>
 </div>
 
+<!-- MESSAGES -->
 <div class="card">
   <div class="card-header">Messages</div>
   <div class="card-content active">
-    <div id="messages">Waiting data...</div>
+    <button id="clearBtn">Clear Messages</button>
+    <div id="messages"></div>
   </div>
 </div>
 
-</div> <!-- END CONTAINER -->
+</div>
 
 <script>
 const $ = id => document.getElementById(id);
 let client = null;
 let connected = false;
 
+/* Toggle card */
 document.querySelectorAll(".card-header").forEach(header=>{
   header.addEventListener("click",()=>{
     header.nextElementSibling.classList.toggle("active");
   });
 });
 
+/* Log function */
 const log = text=>{
   const msgBox = $("messages");
   const time = new Date().toLocaleTimeString();
-  msgBox.innerHTML += `[${time}] ${text}\n`;
+
+  const item = document.createElement("div");
+  item.className = "log-item";
+  item.textContent = `[${time}] ${text}`;
+
+  msgBox.appendChild(item);
   msgBox.scrollTop = msgBox.scrollHeight;
 };
 
-const setStatus = (text, type)=>{
+/* Status update */
+const setStatus = (text,type)=>{
   const status = $("status");
   status.textContent = text;
   status.style.background =
@@ -175,6 +199,7 @@ const setStatus = (text, type)=>{
     "var(--primary)";
 };
 
+/* CONNECT */
 $("connectBtn").addEventListener("click",()=>{
 
   const protocol = $("protocol").value;
@@ -184,7 +209,6 @@ $("connectBtn").addEventListener("click",()=>{
 
   const clientID = "web_" + Math.random().toString(16).substr(2,8);
 
-  /* ===== SAFE FORMAT FOR PAHO ===== */
   client = new Paho.MQTT.Client(
     broker,
     port,
@@ -217,21 +241,32 @@ $("connectBtn").addEventListener("click",()=>{
   });
 });
 
+/* SUBSCRIBE */
 $("subscribeBtn").addEventListener("click",()=>{
   if(!connected) return alert("Not connected");
+
   const topic = $("subtopic").value;
   client.subscribe(topic);
   log("Subscribed: "+topic);
 });
 
+/* PUBLISH */
 $("publishBtn").addEventListener("click",()=>{
   if(!connected) return alert("Not connected");
+
   const topic = $("pubtopic").value;
   const msg = $("message").value;
+
   const message = new Paho.MQTT.Message(msg);
   message.destinationName = topic;
   client.send(message);
+
   log("Sent: "+msg);
+});
+
+/* CLEAR LOG */
+$("clearBtn").addEventListener("click",()=>{
+  $("messages").innerHTML = "";
 });
 </script>
 
